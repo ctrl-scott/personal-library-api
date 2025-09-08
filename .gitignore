@@ -1,0 +1,13 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# Data
+data/*.json
+!data/.keep
+
+# OS
+.DS_Store
+
