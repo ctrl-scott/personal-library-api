@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personal Library Admin</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #ffffff;
+      --muted: #000000;
+      --text: #000000;
+      --accent: #6aa3ff;
+      --danger: #ff6a6a;
+      --ok: #5fd68b;
+      --warn: #ffc155;
+      --border: #000000;
+      --chip: #1e2230;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      background: linear-gradient(180deg, #ffffff, #ffffff 30% 100%);
+      color: var(--text);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+    }
+    header {
+      max-width: 1300px; margin: 0 auto; padding: 16px 16px 0 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    }
+    .card h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .card .head { padding: 14px 16px; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap: 8px; }
+    .card .body { padding: 14px 16px; }
+
+    /* Controls */
+    .controls { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
+    .controls .field { grid-column: span 3; }
+    .controls .field.long { grid-column: span 6; }
+    .controls .field.xlong { grid-column: span 12; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+    input[type="text"], input[type="date"], input[type="number"], input[type="url"], select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      outline: none;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+
+    .btn {
+      padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: #ffffff; color: var(--text);
+      cursor: pointer; transition: transform .05s ease, background .2s ease, border-color .2s ease;
+    }
+    .btn:hover { background: #B5FFFD; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { border-color: #2a3d7a; background: #ffffff; }
+    .btn.primary:hover { background: #B5FFFD; }
+    .btn.danger { border-color: #5e2323; background: #ffffff; }
+    .btn.danger:hover { background: #ffffff; }
+    .btn.ghost { background: transparent; }
+
+    .toolbar { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
+    .spacer { flex: 1; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { text-align: left; font-size: 12px; color: var(--muted); font-weight:500; padding: 10px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+    tbody td { padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tbody tr:hover { background: #B5FFFD; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .tag { display:inline-block; padding: 2px 8px; background: var(--chip); border:1px solid var(--border); color: #cbd5ff; border-radius: 999px; font-size: 12px; margin: 1px 4px 1px 0; }
+    .status { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); }
+    .status.Unread { background: #0f1a29; color: #b6c9ff; }
+    .status.Reading { background: #102313; color: #9adec0; }
+    .status.Finished { background: #1c1d10; color: #e5df9e; }
+    .status.Abandoned { background: #211113; color: #f0b3bc; }
+
+    .muted { color: var(--muted); }
+    .chips { display:flex; flex-wrap: wrap; }
+
+    .row-actions { display:flex; gap: 6px; }
+
+    /* Form layout */
+    .form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
+    .col-12 { grid-column: span 12; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-3 { grid-column: span 3; }
+    .right { text-align: right; }
+
+    .pill { display:inline-flex; align-items:center; gap: 8px; padding: 8px 10px; background: #0f1320; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; }
+
+    .toast { position: fixed; right: 16px; bottom: 16px; background: #0d1d13; color: #d9ffe7; border:1px solid #1e5838; padding: 10px 12px; border-radius: 12px; display: none; }
+    .toast.error { background: #2a1112; color: #ffd3d6; border-color: #5e2323; }
+
+    .cover { width: 50px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); background: #0c0f18; }
+
+    @media (max-width: 1000px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 style="margin:0 0 6px; font-size: 22px;">Personal Library Admin</h1>
+    <div class="muted" style="font-size:13px;">Create, update, search, and delete your purchased book metadata.</div>
+  </header>
+
+  <div class="container">
+    <!-- Left: List & Search -->
+    <section class="card" id="listCard">
+      <div class="head">
+        <h2>Catalog</h2>
+        <div class="toolbar">
+          <button class="btn" id="reloadBtn" title="Reload">Reload</button>
+          <div class="spacer"></div>
+          <span class="muted mono" id="resultCount">0</span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="controls" style="margin-bottom: 10px;">
+          <div class="field long">
+            <label for="q">Search (title, author, tags, notes)</label>
+            <input type="text" id="q" placeholder="e.g., algorithms, Martin, classics" />
+          </div>
+          <div class="field">
+            <label for="author">Author contains</label>
+            <input type="text" id="author" placeholder="e.g., Knuth" />
+          </div>
+          <div class="field">
+            <label for="tag">Tag equals</label>
+            <select id="tag">
+              <option value="">(any)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sort">Sort</label>
+            <select id="sort">
+              <option value="title">Title ⬆</option>
+              <option value="-title">Title ⬇</option>
+              <option value="purchaseDate">Purchase Date ⬆</option>
+              <option value="-purchaseDate">Purchase Date ⬇</option>
+              <option value="createdAt">Created ⬆</option>
+              <option value="-createdAt">Created ⬇</option>
+              <option value="updatedAt">Updated ⬆</option>
+              <option value="-updatedAt">Updated ⬇</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="limit">Page size</label>
+            <select id="limit">
+              <option>10</option>
+              <option selected>25</option>
+              <option>50</option>
+              <option>100</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="after">Purchased ≥</label>
+            <input type="date" id="after" />
+          </div>
+          <div class="field">
+            <label for="before">Purchased ≤</label>
+            <input type="date" id="before" />
+          </div>
+          <div class="field xlong" style="display:flex; align-items:end; gap: 8px;">
+            <button class="btn primary" id="applyFilters">Apply</button>
+            <button class="btn ghost" id="clearFilters">Clear</button>
+          </div>
+        </div>
+
+        <div style="overflow:auto; max-height: 55vh; border:1px solid var(--border); border-radius: 10px;">
+          <table id="grid">
+            <thead>
+              <tr>
+                <th style="width:60px;">Cover</th>
+                <th>Title</th>
+                <th>Authors</th>
+                <th style="width:120px;">Purchased</th>
+                <th style="width:110px;">Status</th>
+                <th style="width:72px;">Rating</th>
+                <th>Tags</th>
+                <th style="width:150px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="toolbar" style="margin-top: 10px;">
+          <button class="btn" id="prevBtn">‹ Prev</button>
+          <button class="btn" id="nextBtn">Next ›</button>
+          <div class="spacer"></div>
+          <span class="muted mono" id="pageInfo">0–0 of 0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Editor Form -->
+    <section class="card">
+      <div class="head">
+        <h2 id="formTitle">New Book</h2>
+        <div class="toolbar">
+          <button class="btn" id="newBtn" title="New">New</button>
+        </div>
+      </div>
+      <div class="body">
+        <form id="bookForm" novalidate>
+          <!-- Hidden current id -->
+          <input type="hidden" id="bookId" />
+
+          <div class="form-grid">
+            <div class="col-12">
+              <label for="title">Title *</label>
+              <input id="title" type="text" required />
+            </div>
+
+            <div class="col-12">
+              <label for="subtitle">Subtitle</label>
+              <input id="subtitle" type="text" />
+            </div>
+
+            <div class="col-12">
+              <label for="authors">Authors (comma separated)</label>
+              <input id="authors" type="text" placeholder="e.g., Donald E. Knuth, Robert Sedgewick" />
+            </div>
+
+            <div class="col-6">
+              <label for="publisher">Publisher</label>
+              <input id="publisher" type="text" />
+            </div>
+            <div class="col-6">
+              <label for="publicationDate">Publication Date</label>
+              <input id="publicationDate" type="date" />
+            </div>
+
+            <div class="col-6">
+              <label for="isbn10">ISBN-10</label>
+              <input id="isbn10" type="text" />
+            </div>
+            <div class="col-6">
+              <label for="isbn13">ISBN-13</label>
+              <input id="isbn13" type="text" />
+            </div>
+
+            <div class="col-6">
+              <label for="edition">Edition</label>
+              <input id="edition" type="text" />
+            </div>
+            <div class="col-6">
+              <label for="format">Format</label>
+              <select id="format">
+                <option>Hardcover</option>
+                <option>Paperback</option>
+                <option>eBook</option>
+                <option>Audiobook</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="col-4">
+              <label for="purchaseDate">Purchase Date</label>
+              <input id="purchaseDate" type="date" />
+            </div>
+            <div class="col-4">
+              <label for="pricePaid">Price Paid</label>
+              <input id="pricePaid" type="number" step="0.01" min="0" />
+            </div>
+            <div class="col-4">
+              <label for="currency">Currency</label>
+              <input id="currency" type="text" value="USD" />
+            </div>
+
+            <div class="col-6">
+              <label for="condition">Condition</label>
+              <select id="condition">
+                <option>Good</option>
+                <option>New</option>
+                <option>Like New</option>
+                <option>Very Good</option>
+                <option>Acceptable</option>
+                <option>Poor</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label for="location">Location (shelf, box, room)</label>
+              <input id="location" type="text" />
+            </div>
+
+            <div class="col-12">
+              <label for="tags">Tags (comma separated)</label>
+              <input id="tags" type="text" placeholder="e.g., CS, Algorithms, Classics" />
+            </div>
+
+            <div class="col-12">
+              <label for="notes">Notes</label>
+              <textarea id="notes" placeholder="Any remarks..."></textarea>
+            </div>
+
+            <div class="col-6">
+              <label for="readStatus">Read Status</label>
+              <select id="readStatus">
+                <option>Unread</option>
+                <option>Reading</option>
+                <option>Finished</option>
+                <option>Abandoned</option>
+              </select>
+            </div>
+            <div class="col-3">
+              <label for="rating">Rating</label>
+              <select id="rating">
+                <option value="">(none)</option>
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+              </select>
+            </div>
+            <div class="col-3">
+              <label for="coverUrl">Cover URL</label>
+              <input id="coverUrl" type="url" placeholder="https://..." />
+            </div>
+
+            <div class="col-12" id="coverPreviewWrap" style="display:none;">
+              <img id="coverPreview" class="cover" alt="Cover preview" />
+            </div>
+
+            <div class="col-12 right" style="margin-top: 4px; display:flex; gap: 8px; justify-content:flex-end;">
+              <button type="button" class="btn" id="resetBtn">Reset</button>
+              <button type="submit" class="btn primary" id="saveBtn">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <template id="rowTpl">
+    <tr>
+      <td><img class="cover" alt="" /></td>
+      <td class="title"></td>
+      <td class="authors"></td>
+      <td class="purchase mono muted"></td>
+      <td class="statusCell"></td>
+      <td class="rating"></td>
+      <td class="tags"></td>
+      <td>
+        <div class="row-actions">
+          <button class="btn" data-action="edit">Edit</button>
+          <button class="btn danger" data-action="delete">Delete</button>
+        </div>
+      </td>
+    </tr>
+  </template>
+
+  <script>
+    // Frontend logic for Personal Library Admin.
+    // This file intentionally avoids third-party dependencies.
+
+    const apiBase = '';
+
+    const els = {
+      q: document.getElementById('q'),
+      author: document.getElementById('author'),
+      tag: document.getElementById('tag'),
+      sort: document.getElementById('sort'),
+      limit: document.getElementById('limit'),
+      after: document.getElementById('after'),
+      before: document.getElementById('before'),
+      applyFilters: document.getElementById('applyFilters'),
+      clearFilters: document.getElementById('clearFilters'),
+      prevBtn: document.getElementById('prevBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      reloadBtn: document.getElementById('reloadBtn'),
+      resultCount: document.getElementById('resultCount'),
+      pageInfo: document.getElementById('pageInfo'),
+
+      gridBody: document.querySelector('#grid tbody'),
+      rowTpl: document.getElementById('rowTpl'),
+
+      // Form
+      formTitle: document.getElementById('formTitle'),
+      form: document.getElementById('bookForm'),
+      bookId: document.getElementById('bookId'),
+      title: document.getElementById('title'),
+      subtitle: document.getElementById('subtitle'),
+      authors: document.getElementById('authors'),
+      publisher: document.getElementById('publisher'),
+      publicationDate: document.getElementById('publicationDate'),
+      isbn10: document.getElementById('isbn10'),
+      isbn13: document.getElementById('isbn13'),
+      edition: document.getElementById('edition'),
+      format: document.getElementById('format'),
+      purchaseDate: document.getElementById('purchaseDate'),
+      pricePaid: document.getElementById('pricePaid'),
+      currency: document.getElementById('currency'),
+      condition: document.getElementById('condition'),
+      location: document.getElementById('location'),
+      tags: document.getElementById('tags'),
+      notes: document.getElementById('notes'),
+      readStatus: document.getElementById('readStatus'),
+      rating: document.getElementById('rating'),
+      coverUrl: document.getElementById('coverUrl'),
+      coverPreviewWrap: document.getElementById('coverPreviewWrap'),
+      coverPreview: document.getElementById('coverPreview'),
+
+      newBtn: document.getElementById('newBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      saveBtn: document.getElementById('saveBtn'),
+
+      toast: document.getElementById('toast'),
+    };
+
+    const state = {
+      offset: 0,
+      total: 0,
+      items: [],
+    };
+
+    function showToast(msg, kind = 'ok') {
+      els.toast.textContent = msg;
+      els.toast.className = 'toast' + (kind === 'error' ? ' error' : '');
+      els.toast.style.display = 'block';
+      setTimeout(() => { els.toast.style.display = 'none'; }, 2500);
+    }
+
+    function serializeQuery(params) {
+      const usp = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null && String(v).length > 0) usp.set(k, v);
+      }
+      return usp.toString();
+    }
+
+    async function api(path, { method = 'GET', body } = {}) {
+      const res = await fetch(apiBase + path, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (e) { /* ignore */ }
+      if (!res.ok) {
+        const message = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+        throw Object.assign(new Error(message), { details: data && data.details });
+      }
+      return data;
+    }
+
+    async function refreshTags() {
+      try {
+        const t = await api('/api/tags');
+        const value = els.tag.value;
+        els.tag.innerHTML = '<option value="">(any)</option>' + t.items.map(x => `<option>${escapeHtml(x)}</option>`).join('');
+        els.tag.value = value;
+      } catch (e) {
+        // Silent failure is acceptable here
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+    }
+
+    function parseListCsv(value) {
+      if (!value) return [];
+      return value.split(',').map(x => x.trim()).filter(Boolean);
+    }
+
+    function joinList(arr) { return Array.isArray(arr) ? arr.join(', ') : ''; }
+
+    function formToPatch() {
+      // Build a PATCH payload from the current form values.
+      const payload = {
+        title: els.title.value.trim(),
+        subtitle: els.subtitle.value.trim() || undefined,
+        authors: parseListCsv(els.authors.value),
+        publisher: els.publisher.value.trim() || undefined,
+        publicationDate: els.publicationDate.value || undefined,
+        isbn10: els.isbn10.value.trim() || undefined,
+        isbn13: els.isbn13.value.trim() || undefined,
+        edition: els.edition.value.trim() || undefined,
+        format: els.format.value,
+        purchaseDate: els.purchaseDate.value || undefined,
+        pricePaid: els.pricePaid.value !== '' ? Number(els.pricePaid.value) : undefined,
+        currency: els.currency.value.trim() || undefined,
+        condition: els.condition.value,
+        location: els.location.value.trim() || undefined,
+        tags: parseListCsv(els.tags.value),
+        notes: els.notes.value.trim() || undefined,
+        readStatus: els.readStatus.value,
+        rating: els.rating.value ? Number(els.rating.value) : undefined,
+        coverUrl: els.coverUrl.value.trim() || undefined,
+      };
+      // Remove undefined fields to keep the payload minimal.
+      for (const k of Object.keys(payload)) if (payload[k] === undefined) delete payload[k];
+      return payload;
+    }
+
+    function setForm(data) {
+      els.bookId.value = data?.id || '';
+      els.formTitle.textContent = data?.id ? 'Edit Book' : 'New Book';
+
+      els.title.value = data?.title || '';
+      els.subtitle.value = data?.subtitle || '';
+      els.authors.value = joinList(data?.authors);
+      els.publisher.value = data?.publisher || '';
+      els.publicationDate.value = data?.publicationDate || '';
+      els.isbn10.value = data?.isbn10 || '';
+      els.isbn13.value = data?.isbn13 || '';
+      els.edition.value = data?.edition || '';
+      els.format.value = data?.format || 'Hardcover';
+      els.purchaseDate.value = data?.purchaseDate || '';
+      els.pricePaid.value = data?.pricePaid ?? '';
+      els.currency.value = data?.currency || 'USD';
+      els.condition.value = data?.condition || 'Good';
+      els.location.value = data?.location || '';
+      els.tags.value = joinList(data?.tags);
+      els.notes.value = data?.notes || '';
+      els.readStatus.value = data?.readStatus || 'Unread';
+      els.rating.value = data?.rating ?? '';
+
+      if (data?.coverUrl) {
+        els.coverPreview.src = data.coverUrl;
+        els.coverPreviewWrap.style.display = '';
+      } else {
+        els.coverPreview.src = '';
+        els.coverPreviewWrap.style.display = 'none';
+      }
+    }
+
+    async function load(id) {
+      const item = await api(`/api/books/${id}`);
+      setForm(item);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function remove(id) {
+      const sure = confirm('Delete this book? This cannot be undone.');
+      if (!sure) return;
+      await api(`/api/books/${id}`, { method: 'DELETE' });
+      showToast('Deleted');
+      await refresh();
+      // If the deleted item is in the form, clear the form.
+      if (els.bookId.value === id) setForm(null);
+    }
+
+    function renderList() {
+      const tbody = els.gridBody;
+      tbody.innerHTML = '';
+      for (const item of state.items) {
+        const tr = els.rowTpl.content.firstElementChild.cloneNode(true);
+        const img = tr.querySelector('img.cover');
+        const title = tr.querySelector('.title');
+        const authors = tr.querySelector('.authors');
+        const purchase = tr.querySelector('.purchase');
+        const statusCell = tr.querySelector('.statusCell');
+        const rating = tr.querySelector('.rating');
+        const tags = tr.querySelector('.tags');
+
+        img.src = item.coverUrl || '';
+        img.style.visibility = item.coverUrl ? 'visible' : 'hidden';
+        title.innerHTML = `<span class="mono muted" title="ID">${item.id.slice(0,8)}</span><br>${escapeHtml(item.title)}${item.subtitle ? `: <span class="muted">${escapeHtml(item.subtitle)}</span>` : ''}`;
+        authors.textContent = (item.authors || []).join(', ');
+        purchase.textContent = item.purchaseDate || '';
+
+        const st = document.createElement('span');
+        st.className = `status ${item.readStatus || ''}`;
+        st.textContent = item.readStatus || '';
+        statusCell.innerHTML = '';
+        statusCell.appendChild(st);
+
+        rating.textContent = item.rating ? '★'.repeat(item.rating) : '';
+
+        tags.innerHTML = '';
+        for (const t of (item.tags || [])) {
+          const chip = document.createElement('span');
+          chip.className = 'tag';
+          chip.textContent = t;
+          tags.appendChild(chip);
+        }
+
+        tr.querySelector('[data-action="edit"]').addEventListener('click', () => load(item.id));
+        tr.querySelector('[data-action="delete"]').addEventListener('click', () => remove(item.id));
+
+        tbody.appendChild(tr);
+      }
+
+      const from = state.total === 0 ? 0 : state.offset + 1;
+      const to = Math.min(state.offset + Number(els.limit.value), state.total);
+      els.pageInfo.textContent = `${from}\u2013${to} of ${state.total}`;
+      els.resultCount.textContent = `${state.total}`;
+    }
+
+    async function refresh() {
+      // Build query from controls
+      const params = {
+        q: els.q.value.trim(),
+        author: els.author.value.trim(),
+        tag: els.tag.value,
+        beforePurchaseDate: els.before.value,
+        afterPurchaseDate: els.after.value,
+        sort: els.sort.value,
+        limit: Number(els.limit.value),
+        offset: state.offset,
+      };
+      const query = serializeQuery(params);
+      const data = await api(`/api/books?${query}`);
+      state.items = data.items;
+      state.total = data.total;
+      renderList();
+    }
+
+    // Pagination
+    els.prevBtn.addEventListener('click', async () => {
+      const size = Number(els.limit.value);
+      state.offset = Math.max(0, state.offset - size);
+      await refresh();
+    });
+    els.nextBtn.addEventListener('click', async () => {
+      const size = Number(els.limit.value);
+      const next = state.offset + size;
+      if (next < state.total) { state.offset = next; await refresh(); }
+    });
+
+    // Filters
+    function clearFilters() {
+      els.q.value = '';
+      els.author.value = '';
+      els.tag.value = '';
+      els.sort.value = 'title';
+      els.limit.value = '25';
+      els.after.value = '';
+      els.before.value = '';
+      state.offset = 0;
+    }
+
+    els.applyFilters.addEventListener('click', async () => { state.offset = 0; await refresh(); });
+    els.clearFilters.addEventListener('click', async () => { clearFilters(); await refresh(); });
+    els.reloadBtn.addEventListener('click', async () => { await refreshTags(); await refresh(); });
+
+    // Debounce search on input
+    let searchTimer = null;
+    function debounceSearch() {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(async () => { state.offset = 0; await refresh(); }, 350);
+    }
+    els.q.addEventListener('input', debounceSearch);
+    els.author.addEventListener('input', debounceSearch);
+
+    // Form events
+    els.newBtn.addEventListener('click', () => setForm(null));
+    els.resetBtn.addEventListener('click', () => setForm(null));
+
+    els.coverUrl.addEventListener('input', () => {
+      if (els.coverUrl.value.trim()) {
+        els.coverPreview.src = els.coverUrl.value.trim();
+        els.coverPreviewWrap.style.display = '';
+      } else {
+        els.coverPreview.src = '';
+        els.coverPreviewWrap.style.display = 'none';
+      }
+    });
+
+    els.form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!els.title.value.trim()) { showToast('Title is required', 'error'); els.title.focus(); return; }
+      const id = els.bookId.value;
+      const payload = formToPatch();
+      try {
+        if (id) {
+          // Update existing (PATCH)
+          const saved = await api(`/api/books/${id}`, { method: 'PATCH', body: payload });
+          setForm(saved);
+          showToast('Updated');
+        } else {
+          // Create new (POST)
+          const saved = await api('/api/books', { method: 'POST', body: payload });
+          setForm(saved);
+          showToast('Created');
+        }
+        await refreshTags();
+        await refresh();
+      } catch (err) {
+        console.error(err);
+        const msg = formatAjvErrors(err.details) || err.message || 'Request failed';
+        showToast(msg, 'error');
+      }
+    });
+
+    function formatAjvErrors(details) {
+      if (!Array.isArray(details) || details.length === 0) return '';
+      const parts = details.slice(0, 3).map(e => `${e.instancePath || e.schemaPath || ''} ${e.message || ''}`.trim());
+      const extra = details.length > 3 ? ` (+${details.length - 3} more)` : '';
+      return parts.join('; ') + extra;
+    }
+
+    async function init() {
+      await refreshTags();
+      await refresh();
+      setForm(null);
+    }
+
+    // Initialize on load
+    init().catch(err => { showToast(err.message || 'Failed to load', 'error'); });
+  </script>
+</body>
+</html>
